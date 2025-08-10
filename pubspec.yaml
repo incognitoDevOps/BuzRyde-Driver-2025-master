@@ -84,6 +84,8 @@ dependencies:
   rename: ^3.0.2
   qr: ^3.0.2
   mobile_scanner: ^3.5.5
+  permission_handler: ^11.3.1
+  lottie: ^3.1.2
 
 
   osm_nominatim: ^3.0.1

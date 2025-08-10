@@ -1,23 +1,15 @@
 import 'dart:developer';
 
-import 'package:driver/constant/constant.dart';
 import 'package:driver/constant/show_toast_dialog.dart';
-import 'package:driver/controller/otp_controller.dart';
-import 'package:driver/model/driver_user_model.dart';
+import 'package:driver/controller/auth_controller.dart';
 import 'package:driver/themes/app_colors.dart';
 import 'package:driver/themes/button_them.dart';
-import 'package:driver/ui/auth_screen/information_screen.dart';
-import 'package:driver/ui/dashboard_screen.dart';
 import 'package:driver/utils/DarkThemeProvider.dart';
-import 'package:driver/utils/fire_store_utils.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:provider/provider.dart';
-
-import '../../themes/responsive.dart';
 
 class OtpScreen extends StatelessWidget {
   const OtpScreen({Key? key}) : super(key: key);
@@ -25,120 +17,127 @@ class OtpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeChange = Provider.of<DarkThemeProvider>(context);
+    final arguments = Get.arguments as Map<String, dynamic>;
+    final String countryCode = arguments['countryCode'] ?? '';
+    final String phoneNumber = arguments['phoneNumber'] ?? '';
+    final String verificationId = arguments['verificationId'] ?? '';
+    final bool isLogin = arguments['isLogin'] ?? false;
 
-    return GetX<OtpController>(
-        init: OtpController(),
-        builder: (controller) {
-          return Scaffold(
-            backgroundColor: Theme.of(context).colorScheme.background,
-            body: SingleChildScrollView(
+    return GetX<AuthController>(
+      init: AuthController(),
+      builder: (controller) {
+        return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.background,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset("assets/images/login_image.png",width: Responsive.width(100, context)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Text("Verify Phone Number".tr ,style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18)),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text("We just send a verification code to \n${controller.countryCode.value + controller.phoneNumber.value}".tr,style: GoogleFonts.poppins()),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 50),
-                          child: PinCodeTextField(
-                            length: 6,
-                            appContext: context,
-                            keyboardType: TextInputType.phone,
-                            pinTheme: PinTheme(
-                              fieldHeight: 50,
-                              fieldWidth: 50,
-                              activeColor: themeChange.getThem() ? AppColors.darkTextFieldBorder : AppColors.textFieldBorder,
-                              selectedColor: themeChange.getThem() ? AppColors.darkTextFieldBorder : AppColors.textFieldBorder,
-                              inactiveColor: themeChange.getThem() ? AppColors.darkTextFieldBorder : AppColors.textFieldBorder,
-                              activeFillColor: themeChange.getThem() ? AppColors.darkTextField : AppColors.textField,
-                              inactiveFillColor: themeChange.getThem() ? AppColors.darkTextField : AppColors.textField,
-                              selectedFillColor: themeChange.getThem() ? AppColors.darkTextField : AppColors.textField,
-                              shape: PinCodeFieldShape.box,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            enableActiveFill: true,
-                            cursorColor: AppColors.primary,
-                            controller: controller.otpController.value,
-                            onCompleted: (v) async {},
-                            onChanged: (value) {},
-                          ),
-                        ),
-                        const SizedBox(
-                          height: 30,
-                        ),
-                        ButtonThem.buildButton(
-                          context,
-                          title: "Verify".tr,
-
-                          onPress: () async {
-                            if (controller.otpController.value.text.length == 6) {
-                              ShowToastDialog.showLoader("Verify OTP".tr);
-
-                              PhoneAuthCredential credential =
-                              PhoneAuthProvider.credential(verificationId: controller.verificationId.value, smsCode: controller.otpController.value.text);
-                              await FirebaseAuth.instance.signInWithCredential(credential).then((value) async {
-                                if (value.additionalUserInfo!.isNewUser) {
-                                  log("----->new user");
-                                  DriverUserModel userModel = DriverUserModel();
-                                  userModel.id = value.user!.uid;
-                                  userModel.countryCode = controller.countryCode.value;
-                                  userModel.phoneNumber = controller.phoneNumber.value;
-                                  userModel.loginType = Constant.phoneLoginType;
-
-                                  ShowToastDialog.closeLoader();
-                                  Get.to(const InformationScreen(), arguments: {
-                                    "userModel": userModel,
-                                  });
-                                } else {
-                                  log("----->old user");
-                                  FireStoreUtils.userExitOrNot(value.user!.uid).then((userExit) {
-                                    ShowToastDialog.closeLoader();
-                                    if (userExit == true) {
-                                      Get.to( const DashBoardScreen());
-                                    } else {
-                                      DriverUserModel userModel = DriverUserModel();
-                                      userModel.id = value.user!.uid;
-                                      userModel.countryCode = controller.countryCode.value;
-                                      userModel.phoneNumber = controller.phoneNumber.value;
-                                      userModel.loginType = Constant.phoneLoginType;
-
-                                      Get.to(const InformationScreen(), arguments: {
-                                        "userModel": userModel,
-                                      });
-                                    }
-                                  });
-                                }
-                              }).catchError((error) {
-                                ShowToastDialog.closeLoader();
-                                ShowToastDialog.showToast("Code is Invalid".tr);
-                              });
-                            } else {
-                              ShowToastDialog.showToast("Please Enter Valid OTP".tr);
-                            }
-
-                            // print(controller.countryCode.value);
-                            // print(controller.phoneNumberController.value.text);
-                          },
-                        ),
-                      ],
+                  // Back button
+                  IconButton(
+                    onPressed: () => Get.back(),
+                    icon: const Icon(Icons.arrow_back),
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.centerLeft,
+                  ),
+                  
+                  const SizedBox(height: 40),
+                  
+                  // Header
+                  Text(
+                    "Verify Phone Number".tr,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 28,
                     ),
-                  )
-
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "We sent a verification code to".tr,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "$countryCode $phoneNumber",
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: themeChange.getThem() ? AppColors.darkModePrimary : AppColors.primary,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 50),
+                  
+                  // OTP Input
+                  PinCodeTextField(
+                    length: 6,
+                    appContext: context,
+                    keyboardType: TextInputType.number,
+                    pinTheme: PinTheme(
+                      fieldHeight: 60,
+                      fieldWidth: 50,
+                      activeColor: themeChange.getThem() ? AppColors.darkModePrimary : AppColors.primary,
+                      selectedColor: themeChange.getThem() ? AppColors.darkModePrimary : AppColors.primary,
+                      inactiveColor: themeChange.getThem() ? AppColors.darkTextFieldBorder : AppColors.textFieldBorder,
+                      activeFillColor: themeChange.getThem() ? AppColors.darkTextField : AppColors.textField,
+                      inactiveFillColor: themeChange.getThem() ? AppColors.darkTextField : AppColors.textField,
+                      selectedFillColor: themeChange.getThem() ? AppColors.darkTextField : AppColors.textField,
+                      shape: PinCodeFieldShape.box,
+                      borderRadius: BorderRadius.circular(12),
+                      borderWidth: 2,
+                    ),
+                    enableActiveFill: true,
+                    cursorColor: themeChange.getThem() ? AppColors.darkModePrimary : AppColors.primary,
+                    controller: controller.otpController.value,
+                    onCompleted: (otp) {
+                      controller.verifyPhoneOTP(otp, verificationId);
+                    },
+                    onChanged: (value) {},
+                  ),
+                  
+                  const SizedBox(height: 40),
+                  
+                  // Verify button
+                  Obx(() => ButtonThem.buildButton(
+                    context,
+                    title: "Verify".tr,
+                    onPress: controller.isLoading.value ? null : () {
+                      if (controller.otpController.value.text.length == 6) {
+                        controller.verifyPhoneOTP(controller.otpController.value.text, verificationId);
+                      } else {
+                        ShowToastDialog.showToast("Please enter complete OTP".tr);
+                      }
+                    },
+                  )),
+                  
+                  const SizedBox(height: 30),
+                  
+                  // Resend OTP
+                  Center(
+                    child: TextButton(
+                      onPressed: () {
+                        // Implement resend OTP logic
+                        Get.back();
+                      },
+                      child: Text(
+                        "Didn't receive code? Resend".tr,
+                        style: GoogleFonts.poppins(
+                          color: themeChange.getThem() ? AppColors.darkModePrimary : AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-          );
-        });
+          ),
+        );
+      },
+    );
   }
 }

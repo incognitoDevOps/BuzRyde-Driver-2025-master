@@ -15,6 +15,10 @@ class DriverUserModel {
   String? serviceId;
   String? fcmToken;
   String? email;
+  String? password;
+  String? approvalStatus; // pending, approved, rejected
+  bool? profileCompleted;
+  bool? documentsSubmitted;
   VehicleInformation? vehicleInformation;
   String? reviewsCount;
   String? reviewsSum;
@@ -37,6 +41,10 @@ class DriverUserModel {
       this.serviceId,
       this.fcmToken,
       this.email,
+      this.password,
+      this.approvalStatus,
+      this.profileCompleted,
+      this.documentsSubmitted,
       this.location,
       this.vehicleInformation,
       this.reviewsCount,
@@ -59,6 +67,10 @@ class DriverUserModel {
     serviceId = json['serviceId'];
     fcmToken = json['fcmToken'];
     email = json['email'];
+    password = json['password'];
+    approvalStatus = json['approvalStatus'] ?? 'pending';
+    profileCompleted = json['profileCompleted'] ?? false;
+    documentsSubmitted = json['documentsSubmitted'] ?? false;
     vehicleInformation = json['vehicleInformation'] != null ? VehicleInformation.fromJson(json['vehicleInformation']) : null;
     reviewsCount = json['reviewsCount'] ?? '0.0';
     reviewsSum = json['reviewsSum'] ?? '0.0';
@@ -83,6 +95,10 @@ class DriverUserModel {
     data['serviceId'] = serviceId;
     data['fcmToken'] = fcmToken;
     data['email'] = email;
+    data['password'] = password;
+    data['approvalStatus'] = approvalStatus;
+    data['profileCompleted'] = profileCompleted;
+    data['documentsSubmitted'] = documentsSubmitted;
     data['rotation'] = rotation;
     data['createdAt'] = createdAt;
     if (vehicleInformation != null) {

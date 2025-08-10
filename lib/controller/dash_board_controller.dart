@@ -1,5 +1,6 @@
 import 'package:driver/constant/show_toast_dialog.dart';
 import 'package:driver/ui/auth_screen/login_screen.dart';
+import 'package:driver/ui/auth_screen/pending_approval_screen.dart';
 import 'package:driver/ui/bank_details/bank_details_screen.dart';
 import 'package:driver/ui/chat_screen/inbox_screen.dart';
 import 'package:driver/ui/freight/freight_screen.dart';
@@ -10,7 +11,9 @@ import 'package:driver/ui/profile_screen/profile_screen.dart';
 import 'package:driver/ui/settings_screen/setting_screen.dart';
 import 'package:driver/ui/vehicle_information/vehicle_information_screen.dart';
 import 'package:driver/ui/wallet/wallet_screen.dart';
-import 'package:driver/utils/utils.dart';
+import 'package:driver/utils/location_service.dart';
+import 'package:driver/model/driver_user_model.dart';
+import 'package:driver/utils/fire_store_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -80,12 +83,26 @@ class DashBoardController extends GetxController {
   @override
   void onInit() {
     // TODO: implement onInit
-    getLocation();
+    checkUserApprovalStatus();
+    initializeLocation();
     super.onInit();
   }
 
-  getLocation() async {
-    await Utils.determinePosition();
+  /// Check if user is still approved and redirect if not
+  checkUserApprovalStatus() async {
+    try {
+      DriverUserModel? user = await FireStoreUtils.getDriverProfile(FireStoreUtils.getCurrentUid());
+      if (user != null && user.approvalStatus != 'approved') {
+        Get.offAll(() => const PendingApprovalScreen());
+      }
+    } catch (e) {
+      print("Error checking user status: $e");
+    }
+  }
+
+  /// Initialize location services
+  initializeLocation() async {
+    await LocationService.instance.getCurrentLocation(showLoader: false);
   }
 
   Rx<DateTime> currentBackPressTime = DateTime.now().obs;
